@@ -1,8 +1,9 @@
 import lightgbm as lgb
+import matplotlib.pyplot as plt
 import numpy as np
 
 
-class LGBM_Regressor:
+class LGBMRegressor:
     """
     Regressor Class of LightGBM
 
@@ -88,64 +89,28 @@ class LGBM_Regressor:
 
     def plot_learning_curve(self, X, y, model_list, savepath=None):
         """
-        学習曲線の描画
+        Learning Curve
 
         Args:
             X: ndarray, (n_sample, n_features)
-                前処理後の説明変数データ
+                input data after preprocessing
             y: ndarray, (n_sample,)
-                目的変数ラベル
+                target data
             model_list: list[model instance]
-                モデルインスタンスのリスト
+                model instance list
         """
-        figsize = (10, 15)
-        nrows, ncols = len(model_list) // 2 + len(model_list) % 2, 2
-        # nrows, ncols = 3, 2
-        fig, ax = plt.subplots(
-            nrows=nrows,
-            ncols=ncols,
-            figsize=figsize,
-            sharey=True,
-        )
-
-        # F1値のscorer objectを作成
-        scorer = make_scorer(lambda y_true, y_pred: f1_score(y_true, y_pred))
-        # 設定
-        common_params = {
-            "X": X,
-            "y": y,
-            "train_sizes": np.linspace(0.1, 1.0, 5),
-            "cv": ShuffleSplit(n_splits=50, test_size=0.2, random_state=0),
-            "score_type": "both",
-            "scoring": scorer,
-            "score_name": "F1",
-            "line_kw": {"marker": "o"},
-            "std_display_style": "fill_between",
-        }
-
-        model_idx = 0
-        for i in range(nrows):
-            for j in range(ncols):
-                assert f"{model_list[model_idx].__class__.__name__}" in [
-                    "SVC",
-                    "LogisticRegression",
-                    "LGBMClassifier",
-                ], "サポート手法外です.."
-
-                LearningCurveDisplay.from_estimator(
-                    model_list[model_idx], **common_params, ax=ax[i][j]
-                )
-                handles, label = ax[i][j].get_legend_handles_labels()
-                ax[i][j].legend(handles[:2], ["train", "val"], loc="lower right")
-                ax[i][j].set_ylim(0.5, 1)
-                model_idx += 1
-                # Error対策: モデルリストのindex外参照
-                if model_idx >= self.config.n_kfold:
-                    break
-
+        fig, ax = plt.subplots(figsize=(10, 10))
+        for model in model_list:
+            model.model.plot_metric(
+                ax=ax,
+                figsize=(10, 10),
+                title="Learning Curve",
+                xlabel="Iterations",
+                ylabel="RMSE",
+            )
         if savepath is not None:
             plt.savefig(savepath)
-        plt.close()
+        plt.show()
 
 
 if __name__ == "__main__":
